@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>天氣特派員｜互動視覺學習儀表板</title>
+  <style>
+    :root {
+      --bg1: #dff3ff;
+      --bg2: #f8fbff;
+      --card: rgba(255,255,255,0.88);
+      --line: rgba(48,95,140,0.14);
+      --text: #17324d;
+      --sub: #55738f;
+      --sun: #ffcc4d;
+      --rain: #4e92ff;
+      --cloud: #eef5fb;
+      --shadow: 0 12px 30px rgba(40, 94, 140, 0.12);
+      --radius: 24px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif; color: var(--text); }
+    body {
+      background: linear-gradient(180deg, #bfe9ff 0%, #eaf8ff 35%, #f7fbff 100%);
+      min-height: 100vh;
+    }
+
+    .wrap {
+      width: min(1300px, calc(100% - 32px));
+      margin: 24px auto 40px;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      border-radius: 32px;
+      padding: 28px 28px 22px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.85), rgba(255,255,255,0.70));
+      border: 1px solid rgba(255,255,255,0.6);
+      box-shadow: 0 18px 40px rgba(44,113,167,0.14);
+      backdrop-filter: blur(8px);
+    }
+
+    .hero::before,
+    .hero::after {
+      content: "";
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(8px);
+      opacity: 0.45;
+      pointer-events: none;
+    }
+    .hero::before {
+      width: 220px; height: 220px;
+      right: -40px; top: -40px;
+      background: radial-gradient(circle, #fff3a8 0%, transparent 70%);
+    }
+    .hero::after {
+      width: 260px; height: 260px;
+      left: -60px; bottom: -80px;
+      background: radial-gradient(circle, #cfeeff 0%, transparent 72%);
+    }
+
+    .hero-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      position: relative;
+      z-index: 1;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2rem, 3vw, 3.2rem);
+      line-height: 1.08;
+      letter-spacing: 0.03em;
+    }
+
+    .tagline {
+      margin-top: 10px;
+      font-size: 1.05rem;
+      color: var(--sub);
+      line-height: 1.8;
+      max-width: 760px;
+    }
+
+    .badges {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+
+    .badge {
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.8);
+      border: 1px solid rgba(89,130,170,0.15);
+      color: #255b8d;
+      font-weight: 700;
+      font-size: 0.95rem;
+      box-shadow: 0 8px 18px rgba(64,126,178,0.08);
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .btn {
+      appearance: none;
+      border: none;
+      cursor: pointer;
+      border-radius: 16px;
+      padding: 12px 18px;
+      font-size: 0.98rem;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      transition: 0.2s ease;
+      box-shadow: 0 10px 20px rgba(48,110,160,0.12);
+    }
+
+    .btn.primary { background: linear-gradient(135deg, #2b8cff, #4ea7ff); color: white; }
+    .btn.secondary { background: white; color: #255b8d; border: 1px solid rgba(68,121,173,0.16); }
+    .btn:hover { transform: translateY(-2px); }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid rgba(255,255,255,0.6);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 22px;
+      backdrop-filter: blur(8px);
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .section-title h2, .section-title h3 {
+      margin: 0;
+      font-size: 1.35rem;
+    }
+
+    .section-title .sub {
+      color: var(--sub);
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+
+    .scene {
+      position: relative;
+      min-height: 370px;
+      border-radius: 28px;
+      overflow: hidden;
+      background: linear-gradient(180deg, #75c7ff 0%, #b8e9ff 56%, #d8f3ff 100%);
+      border: 1px solid rgba(255,255,255,0.75);
+    }
+
+    .sun {
+      position: absolute;
+      width: 90px;
+      height: 90px;
+      left: 40px;
+      top: 40px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #fff6c7 0%, #ffd55f 55%, #ffbc33 100%);
+      box-shadow: 0 0 0 16px rgba(255,215,95,0.14), 0 0 60px rgba(255,210,82,0.45);
+      transition: 0.5s ease;
+    }
+
+    .cloud-layer, .rain-layer, .star-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .cloud {
+      position: absolute;
+      background: rgba(255,255,255,0.92);
+      border-radius: 999px;
+      filter: drop-shadow(0 8px 10px rgba(86,133,172,0.10));
+      transition: 0.35s ease;
+    }
+
+    .cloud::before, .cloud::after {
+      content: "";
+      position: absolute;
+      background: inherit;
+      border-radius: 50%;
+    }
+
+    .cloud::before { width: 42%; height: 90%; left: 14%; top: -38%; }
+    .cloud::after { width: 34%; height: 80%; right: 16%; top: -28%; }
+
+    .c1 { width: 140px; height: 52px; left: 180px; top: 62px; }
+    .c2 { width: 170px; height: 58px; right: 55px; top: 92px; }
+    .c3 { width: 120px; height: 46px; left: 95px; top: 132px; }
+    .c4 { width: 150px; height: 54px; right: 150px; top: 150px; }
+
+    .mountain {
+      position: absolute;
+      bottom: 0;
+      width: 0;
+      height: 0;
+      border-left: 180px solid transparent;
+      border-right: 180px solid transparent;
+      border-bottom: 210px solid #6ea56f;
+      filter: saturate(0.95);
+    }
+    .m1 { left: -30px; border-bottom-color: #78ad7c; }
+    .m2 { left: 180px; border-left-width: 220px; border-right-width: 220px; border-bottom-width: 250px; border-bottom-color: #67986d; }
+    .m3 { right: -50px; border-bottom-color: #5d8b64; }
+
+    .ground {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 88px;
+      background: linear-gradient(180deg, #8bc77f, #67ab63);
+    }
+
+    .trees {
+      position: absolute;
+      left: 0; right: 0; bottom: 65px;
+      display: flex;
+      justify-content: space-around;
+      padding: 0 28px;
+      opacity: 0.95;
+    }
+
+    .tree {
+      position: relative;
+      width: 16px;
+      height: 50px;
+      background: #80552d;
+      border-radius: 5px;
+    }
+
+    .tree::before {
+      content: "";
+      position: absolute;
+      left: -18px;
+      bottom: 16px;
+      width: 52px;
+      height: 52px;
+      background: #4e8d4e;
+      border-radius: 50%;
+      box-shadow: -10px 4px 0 0 #5f9a57, 10px 4px 0 0 #3d7e41;
+    }
+
+    .station {
+      position: absolute;
+      right: 48px;
+      bottom: 52px;
+      width: 120px;
+      height: 86px;
+      border-radius: 12px 12px 0 0;
+      background: #fefefe;
+      border: 2px solid rgba(77,118,155,0.14);
+      box-shadow: 0 10px 16px rgba(39,86,128,0.08);
+    }
+    .station::before {
+      content: "";
+      position: absolute;
+      left: -8px;
+      right: -8px;
+      top: -20px;
+      height: 24px;
+      background: #ff8b6d;
+      border-radius: 10px 10px 0 0;
+    }
+    .station::after {
+      content: "☁";
+      position: absolute;
+      left: 0; right: 0; top: 24px;
+      text-align: center;
+      font-size: 2rem;
+    }
+
+    .rain-drop {
+      position: absolute;
+      width: 3px;
+      height: 16px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.9), rgba(76,151,255,0.9));
+      opacity: 0;
+      animation: rain 1.2s linear infinite;
+    }
+
+    @keyframes rain {
+      0% { transform: translateY(-12px); opacity: 0; }
+      15% { opacity: 0.8; }
+      100% { transform: translateY(60px); opacity: 0; }
+    }
+
+    .star {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: rgba(255,255,255,0.95);
+      border-radius: 50%;
+      box-shadow: 0 0 12px rgba(255,255,255,0.85);
+      opacity: 0;
+      animation: twinkle 2.2s ease-in-out infinite;
+    }
+
+    @keyframes twinkle {
+      0%,100% { transform: scale(0.7); opacity: 0.25; }
+      50% { transform: scale(1.3); opacity: 1; }
+    }
+
+    .lightning {
+      position: absolute;
+      left: 58%;
+      top: 105px;
+      width: 14px;
+      height: 90px;
+      background: #fff7b0;
+      clip-path: polygon(40% 0, 100% 0, 62% 42%, 88% 42%, 14% 100%, 36% 56%, 8% 56%);
+      filter: drop-shadow(0 0 16px rgba(255,255,190,0.95));
+      opacity: 0;
+      transform: scale(0.95);
+      transition: 0.2s ease;
+    }
+
+    .weather-label {
+      position: absolute;
+      left: 20px;
+      bottom: 18px;
+      padding: 10px 16px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.84);
+      box-shadow: 0 8px 18px rgba(65,124,174,0.12);
+      font-weight: 900;
+      font-size: 1rem;
+    }
+
+    .obs-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .mini {
+      background: rgba(255,255,255,0.84);
+      border-radius: 18px;
+      padding: 12px;
+      border: 1px solid rgba(77,118,155,0.1);
+    }
+
+    .mini .k { color: var(--sub); font-size: 0.9rem; }
+    .mini .v { margin-top: 6px; font-size: 1.45rem; font-weight: 900; }
+
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      margin-top: 6px;
+    }
+
+    .control {
+      background: rgba(255,255,255,0.78);
+      border: 1px solid rgba(70,120,160,0.10);
+      border-radius: 18px;
+      padding: 14px 16px;
+    }
+
+    .control label {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      font-weight: 800;
+      font-size: 0.98rem;
+      margin-bottom: 10px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: #4594ff;
+      cursor: pointer;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .chip {
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: white;
+      border: 1px solid rgba(69,124,173,0.12);
+      font-weight: 800;
+      cursor: pointer;
+      transition: 0.18s ease;
+    }
+
+    .chip.active, .chip:hover {
+      background: linear-gradient(135deg, #2c8cff, #5eb6ff);
+      color: white;
+      transform: translateY(-1px);
+    }
+
+    .state-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .state-card {
+      background: rgba(255,255,255,0.85);
+      border-radius: 20px;
+      padding: 14px 12px;
+      border: 1px solid rgba(70,120,160,0.10);
+      text-align: center;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+
+    .state-card:hover, .state-card.active {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 22px rgba(52,106,155,0.12);
+      border-color: rgba(54,126,196,0.22);
+    }
+
+    .emoji { font-size: 2.2rem; }
+    .state-title { font-weight: 900; margin-top: 8px; }
+    .state-desc { color: var(--sub); font-size: 0.92rem; line-height: 1.55; margin-top: 6px; }
+
+    .tips {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 12px;
+    }
+
+    .tip-card {
+      border-radius: 20px;
+      background: rgba(255,255,255,0.82);
+      border: 1px solid rgba(70,120,160,0.10);
+      padding: 16px;
+    }
+
+    .tip-card h4 { margin: 0 0 10px 0; font-size: 1.05rem; }
+    .tip-list { margin: 0; padding-left: 18px; line-height: 1.8; color: #35536d; }
+
+    .footer-note {
+      margin-top: 18px;
+      text-align: center;
+      color: var(--sub);
+      font-size: 0.95rem;
+    }
+
+    .quiz-box {
+      margin-top: 12px;
+      border-radius: 22px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.88), rgba(241,249,255,0.88));
+      border: 1px solid rgba(65,118,167,0.10);
+      padding: 18px;
+    }
+
+    .quiz-q { font-weight: 900; font-size: 1.08rem; line-height: 1.7; }
+    .quiz-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+    .quiz-options button {
+      border: 1px solid rgba(64,119,172,0.14);
+      background: white;
+      padding: 12px 14px;
+      border-radius: 16px;
+      font-size: 0.98rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: 0.18s ease;
+    }
+    .quiz-options button:hover { transform: translateY(-1px); }
+    .quiz-feedback {
+      margin-top: 12px;
+      min-height: 28px;
+      font-weight: 800;
+      color: #225f93;
+    }
+
+    .score {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: white;
+      font-weight: 900;
+      color: #205d92;
+      border: 1px solid rgba(70,120,160,0.10);
+    }
+
+    @media (max-width: 1100px) {
+      .grid { grid-template-columns: 1fr; }
+      .state-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    @media (max-width: 820px) {
+      .controls, .tips, .obs-grid, .quiz-options { grid-template-columns: 1fr; }
+      .state-grid { grid-template-columns: repeat(2, 1fr); }
+      .hero { padding: 22px 18px; }
+      .card { padding: 18px; }
+      .scene { min-height: 320px; }
+    }
+
+    @media (max-width: 560px) {
+      .state-grid { grid-template-columns: 1fr; }
+      .badges, .hero-actions, .chips { gap: 8px; }
+      .btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <div class="hero-top">
+        <div>
+          <h1>⛅ 天氣特派員</h1>
+          <div class="tagline">
+            歡迎加入天氣觀察任務！透過互動式視覺儀表板，認識常見天氣狀態、練習觀察溫度與風雨變化，並了解天氣如何影響我們的穿著、活動與安全。
+          </div>
+          <div class="badges">
+            <div class="badge">認識天氣狀態</div>
+            <div class="badge">觀察天氣變化</div>
+            <div class="badge">天氣與生活</div>
+            <div class="badge">互動學習任務</div>
+          </div>
+        </div>
+        <div class="hero-actions">
+          <button class="btn primary" id="randomWeatherBtn">🎲 隨機天氣任務</button>
+          <button class="btn secondary" id="resetBtn">🔄 重設觀察站</button>
+          <div class="score">⭐ 任務分數：<span id="scoreValue">0</span></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="grid">
+      <section class="card">
+        <div class="section-title">
+          <div>
+            <h2>🌤 天氣觀察站</h2>
+            <div class="sub">調整數值，看看天空、雲量、雨勢與生活建議會怎麼改變。</div>
+          </div>
+        </div>
+
+        <div class="scene" id="scene">
+          <div class="sun" id="sun"></div>
+          <div class="cloud-layer" id="cloudLayer">
+            <div class="cloud c1"></div>
+            <div class="cloud c2"></div>
+            <div class="cloud c3"></div>
+            <div class="cloud c4"></div>
+          </div>
+          <div class="rain-layer" id="rainLayer"></div>
+          <div class="star-layer" id="starLayer"></div>
+          <div class="lightning" id="lightning"></div>
+          <div class="mountain m1"></div>
+          <div class="mountain m2"></div>
+          <div class="mountain m3"></div>
+          <div class="trees">
+            <div class="tree"></div>
+            <div class="tree"></div>
+            <div class="tree"></div>
+            <div class="tree"></div>
+            <div class="tree"></div>
+          </div>
+          <div class="station"></div>
+          <div class="ground"></div>
+          <div class="weather-label" id="weatherLabel">今日天氣：晴天</div>
+        </div>
+
+        <div class="obs-grid">
+          <div class="mini"><div class="k">🌡 溫度</div><div class="v" id="tempDisplay">28°C</div></div>
+          <div class="mini"><div class="k">☁ 雲量</div><div class="v" id="cloudDisplay">30%</div></div>
+          <div class="mini"><div class="k">🌧 降雨</div><div class="v" id="rainDisplay">10%</div></div>
+          <div class="mini"><div class="k">💨 風力</div><div class="v" id="windDisplay">2級</div></div>
+        </div>
+
+        <div class="controls">
+          <div class="control">
+            <label>🌡 溫度 <span id="tempVal">28°C</span></label>
+            <input type="range" id="temp" min="5" max="38" value="28" />
+          </div>
+          <div class="control">
+            <label>☁ 雲量 <span id="cloudVal">30%</span></label>
+            <input type="range" id="cloud" min="0" max="100" value="30" />
+          </div>
+          <div class="control">
+            <label>🌧 降雨機率 <span id="rainVal">10%</span></label>
+            <input type="range" id="rain" min="0" max="100" value="10" />
+          </div>
+          <div class="control">
+            <label>💨 風力等級 <span id="windVal">2級</span></label>
+            <input type="range" id="wind" min="0" max="8" value="2" />
+          </div>
+        </div>
+
+        <div class="chips" id="presetChips">
+          <button class="chip active" data-preset="sunny">晴朗巡查</button>
+          <button class="chip" data-preset="cloudy">多雲任務</button>
+          <button class="chip" data-preset="rainy">下雨特報</button>
+          <button class="chip" data-preset="storm">雷雨警戒</button>
+          <button class="chip" data-preset="cold">冷冷觀測</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="section-title">
+          <div>
+            <h2>🧭 認識天氣狀態</h2>
+            <div class="sub">點選天氣卡片，快速認識特徵、觀察重點與生活提醒。</div>
+          </div>
+        </div>
+
+        <div class="state-grid" id="stateGrid"></div>
+
+        <div class="quiz-box">
+          <div class="section-title" style="margin-bottom: 8px;">
+            <h3>📝 小小特派員快問快答</h3>
+            <button class="btn secondary" id="nextQuizBtn" style="padding: 9px 14px; font-size: 0.9rem;">下一題</button>
+          </div>
+          <div class="quiz-q" id="quizQuestion"></div>
+          <div class="quiz-options" id="quizOptions"></div>
+          <div class="quiz-feedback" id="quizFeedback"></div>
+        </div>
+      </section>
+    </div>
+
+    <section class="card" style="margin-top: 18px;">
+      <div class="section-title">
+        <div>
+          <h2>🏕 天氣與生活</h2>
+          <div class="sub">不同的天氣，會影響穿著、活動安排和安全提醒。一起學會做出好判斷！</div>
+        </div>
+      </div>
+
+      <div class="tips">
+        <div class="tip-card">
+          <h4>👕 穿著建議</h4>
+          <ul class="tip-list" id="clothingTips"></ul>
+        </div>
+        <div class="tip-card">
+          <h4>🚶 活動與安全提醒</h4>
+          <ul class="tip-list" id="lifeTips"></ul>
+        </div>
+      </div>
+
+      <div class="footer-note" id="missionText">今日任務：觀察天空中的雲量變化，並說說這樣的天氣適合做哪些活動。</div>
+    </section>
+  </div>
+
+  <script>
+    const weatherStates = [
+      {
+        id: 'sunny', emoji: '☀️', name: '晴天',
+        desc: '天空大多明亮、雲少，陽光明顯，適合戶外活動。',
+        tips: ['注意防曬與補充水分', '中午時段較炎熱，要避免曝曬太久']
+      },
+      {
+        id: 'cloudy', emoji: '⛅', name: '多雲',
+        desc: '天空中有較多雲，但仍可能看見陽光，天氣較舒適。',
+        tips: ['觀察雲層厚薄與移動方向', '可安排戶外活動，但仍要注意天氣變化']
+      },
+      {
+        id: 'rainy', emoji: '🌧️', name: '下雨',
+        desc: '天空陰沉，可能出現雨滴或持續降雨，道路容易濕滑。',
+        tips: ['出門要帶雨具', '走路慢一點，注意地面濕滑']
+      },
+      {
+        id: 'storm', emoji: '⛈️', name: '雷雨',
+        desc: '強對流天氣，常伴隨大雨、閃電與較大風勢。',
+        tips: ['避免在空曠地區停留', '打雷時不要靠近大樹、電線桿與水邊']
+      },
+      {
+        id: 'cold', emoji: '🥶', name: '寒冷',
+        desc: '氣溫偏低，風大時體感更冷，需要注意保暖。',
+        tips: ['記得穿外套與保暖衣物', '早晚溫差大時更要注意身體狀況']
+      }
+    ];
+
+    const quizBank = [
+      {
+        q: '看到烏雲變多、天空變暗，而且風也變大，最可能是哪一種天氣？',
+        options: ['晴天', '雷雨', '寒冷', '乾燥'], answer: 1,
+        explain: '烏雲增加、風變強，常是雷雨來臨前的徵兆。'
+      },
+      {
+        q: '下雨天出門，最適合準備哪一樣物品？',
+        options: ['墨鏡', '厚棉被', '雨傘或雨衣', '泳鏡'], answer: 2,
+        explain: '下雨時要準備雨具，並注意道路濕滑。'
+      },
+      {
+        q: '氣溫很高、太陽很大時，哪一個做法比較安全？',
+        options: ['不喝水', '中午一直曝曬', '補充水分並注意防曬', '穿厚重外套'], answer: 2,
+        explain: '炎熱天氣要補充水分，也要避免長時間曝曬。'
+      },
+      {
+        q: '哪一個是觀察天氣時常會注意的項目？',
+        options: ['雲量', '鞋帶顏色', '課本頁數', '鉛筆長度'], answer: 0,
+        explain: '觀察天氣時，常注意雲量、風力、溫度和降雨情形。'
+      }
+    ];
+
+    const presets = {
+      sunny: { temp: 31, cloud: 15, rain: 0, wind: 2 },
+      cloudy: { temp: 27, cloud: 60, rain: 20, wind: 2 },
+      rainy: { temp: 24, cloud: 85, rain: 70, wind: 3 },
+      storm: { temp: 25, cloud: 95, rain: 90, wind: 6 },
+      cold: { temp: 12, cloud: 50, rain: 15, wind: 4 }
+    };
+
+    const missionTexts = [
+      '今日任務：觀察天空中的雲量變化，並說說這樣的天氣適合做哪些活動。',
+      '今日任務：比較晴天與雨天的穿著差異。',
+      '今日任務：試著描述風大時，樹木、旗子和雲朵會有什麼變化。',
+      '今日任務：想一想，雷雨天為什麼不適合在空曠地玩耍？',
+      '今日任務：觀察氣溫改變後，生活建議是如何跟著變化的。'
+    ];
+
+    const temp = document.getElementById('temp');
+    const cloud = document.getElementById('cloud');
+    const rain = document.getElementById('rain');
+    const wind = document.getElementById('wind');
+
+    const tempVal = document.getElementById('tempVal');
+    const cloudVal = document.getElementById('cloudVal');
+    const rainVal = document.getElementById('rainVal');
+    const windVal = document.getElementById('windVal');
+
+    const tempDisplay = document.getElementById('tempDisplay');
+    const cloudDisplay = document.getElementById('cloudDisplay');
+    const rainDisplay = document.getElementById('rainDisplay');
+    const windDisplay = document.getElementById('windDisplay');
+
+    const scene = document.getElementById('scene');
+    const sun = document.getElementById('sun');
+    const cloudLayer = document.getElementById('cloudLayer');
+    const rainLayer = document.getElementById('rainLayer');
+    const starLayer = document.getElementById('starLayer');
+    const lightning = document.getElementById('lightning');
+    const weatherLabel = document.getElementById('weatherLabel');
+    const clothingTips = document.getElementById('clothingTips');
+    const lifeTips = document.getElementById('lifeTips');
+    const missionText = document.getElementById('missionText');
+    const scoreValue = document.getElementById('scoreValue');
+    const presetChips = document.getElementById('presetChips');
+    const stateGrid = document.getElementById('stateGrid');
+    const randomWeatherBtn = document.getElementById('randomWeatherBtn');
+    const resetBtn = document.getElementById('resetBtn');
+
+    const quizQuestion = document.getElementById('quizQuestion');
+    const quizOptions = document.getElementById('quizOptions');
+    const quizFeedback = document.getElementById('quizFeedback');
+    const nextQuizBtn = document.getElementById('nextQuizBtn');
+
+    let score = 0;
+    let currentQuiz = 0;
+
+    function createRainDrops() {
+      rainLayer.innerHTML = '';
+      for (let i = 0; i < 46; i++) {
+        const drop = document.createElement('div');
+        drop.className = 'rain-drop';
+        drop.style.left = Math.random() * 100 + '%';
+        drop.style.top = (80 + Math.random() * 120) + 'px';
+        drop.style.animationDelay = (Math.random() * 1.2).toFixed(2) + 's';
+        drop.style.height = (10 + Math.random() * 12) + 'px';
+        rainLayer.appendChild(drop);
+      }
+    }
+
+    function createStars() {
+      starLayer.innerHTML = '';
+      for (let i = 0; i < 24; i++) {
+        const star = document.createElement('div');
+        star.className = 'star';
+        star.style.left = (Math.random() * 100) + '%';
+        star.style.top = (Math.random() * 45) + '%';
+        star.style.animationDelay = (Math.random() * 2).toFixed(2) + 's';
+        starLayer.appendChild(star);
+      }
+    }
+
+    function getWeatherType(t, c, r, w) {
+      if (r >= 75 && w >= 5) return '雷雨';
+      if (r >= 35) return '下雨';
+      if (t <= 14) return '寒冷';
+      if (c >= 55) return '多雲';
+      return '晴天';
+    }
+
+    function updateTips(type, t, r, w) {
+      let wear = [];
+      let life = [];
+
+      if (type === '晴天') {
+        wear = ['穿著透氣、輕便的衣服。', '可戴帽子或撐陽傘做好防曬。'];
+        life = ['適合戶外運動，但要補充水分。', '中午陽光強時要避免長時間曝曬。'];
+      } else if (type === '多雲') {
+        wear = ['穿著舒適的短袖或薄外套。', '可視早晚溫差準備外套。'];
+        life = ['適合散步、觀察雲層變化。', '出門前可再注意天氣是否轉雨。'];
+      } else if (type === '下雨') {
+        wear = ['準備雨傘或雨衣。', '選擇不易濕滑的鞋子。'];
+        life = ['走路放慢，注意地面濕滑。', '適合安排室內活動與閱讀學習。'];
+      } else if (type === '雷雨') {
+        wear = ['攜帶完整雨具，避免穿著太容易吸水的衣物。', '視情況準備替換衣物。'];
+        life = ['避免在空曠地、樹下、水邊活動。', '如有閃電打雷，應盡快進入室內。'];
+      } else if (type === '寒冷') {
+        wear = ['加穿外套、保暖衣物或圍巾。', '早晚外出可注意多層次穿搭。'];
+        life = ['早晚溫差大，注意保暖。', '可安排較溫和的活動，運動前先暖身。'];
+      }
+
+      if (t >= 33) {
+        wear.push('高溫時建議多喝水，避免中暑。');
+        life.push('炎熱時段可優先安排室內或陰涼處活動。');
+      }
+      if (w >= 5) {
+        life.push('風勢較大時，注意帽子、雨傘與高處掉落物。');
+      }
+      if (r <= 10 && t >= 20 && type !== '雷雨') {
+        life.push('天氣穩定時，適合進行校園觀察或戶外學習。');
+      }
+
+      clothingTips.innerHTML = wear.map(item => `<li>${item}</li>`).join('');
+      lifeTips.innerHTML = life.map(item => `<li>${item}</li>`).join('');
+    }
+
+    function updateScene() {
+      const t = +temp.value;
+      const c = +cloud.value;
+      const r = +rain.value;
+      const w = +wind.value;
+
+      tempVal.textContent = `${t}°C`;
+      cloudVal.textContent = `${c}%`;
+      rainVal.textContent = `${r}%`;
+      windVal.textContent = `${w}級`;
+
+      tempDisplay.textContent = `${t}°C`;
+      cloudDisplay.textContent = `${c}%`;
+      rainDisplay.textContent = `${r}%`;
+      windDisplay.textContent = `${w}級`;
+
+      const type = getWeatherType(t, c, r, w);
+      weatherLabel.textContent = `今日天氣：${type}`;
+
+      const clouds = [...document.querySelectorAll('.cloud')];
+      clouds.forEach((cloudEl, index) => {
+        const opacity = Math.min(0.25 + c / 100, 1);
+        cloudEl.style.opacity = opacity;
+        cloudEl.style.transform = `translateX(${w * (index % 2 === 0 ? 3 : -3)}px) scale(${0.9 + c/250})`;
+      });
+
+      const sunScale = Math.max(0.55, 1 - c / 160 - r / 180);
+      sun.style.transform = `scale(${sunScale}) translateY(${r > 50 ? 12 : 0}px)`;
+      sun.style.opacity = String(Math.max(0.2, 1 - c / 120 - r / 150));
+
+      rainLayer.style.opacity = r >= 20 ? Math.min(1, r / 80) : 0;
+      [...rainLayer.children].forEach(drop => {
+        drop.style.display = r >= 20 ? 'block' : 'none';
+      });
+
+      const isStorm = r >= 75 && w >= 5;
+      lightning.style.opacity = isStorm ? 1 : 0;
+      lightning.style.transform = isStorm ? 'scale(1)' : 'scale(0.95)';
+
+      const skyTop = isStorm ? '#53657e' : r >= 35 ? '#7da4c6' : c >= 60 ? '#9ec5df' : '#75c7ff';
+      const skyMid = isStorm ? '#7d8fa8' : r >= 35 ? '#aecbe1' : c >= 60 ? '#cae2f2' : '#b8e9ff';
+      const skyBottom = isStorm ? '#aab5c7' : '#d8f3ff';
+      scene.style.background = `linear-gradient(180deg, ${skyTop} 0%, ${skyMid} 56%, ${skyBottom} 100%)`;
+
+      if (t <= 10) {
+        scene.style.background = 'linear-gradient(180deg, #9fc9ee 0%, #dbeeff 58%, #f4fbff 100%)';
+      }
+
+      const showStars = t <= 12 && c <= 40 && r < 20;
+      starLayer.style.opacity = showStars ? 1 : 0;
+      [...starLayer.children].forEach(star => {
+        star.style.opacity = showStars ? 1 : 0;
+      });
+
+      updateTips(type, t, r, w);
+    }
+
+    function setPreset(name) {
+      const p = presets[name];
+      if (!p) return;
+      temp.value = p.temp;
+      cloud.value = p.cloud;
+      rain.value = p.rain;
+      wind.value = p.wind;
+      [...presetChips.querySelectorAll('.chip')].forEach(chip => {
+        chip.classList.toggle('active', chip.dataset.preset === name);
+      });
+      missionText.textContent = missionTexts[Math.floor(Math.random() * missionTexts.length)];
+      updateScene();
+    }
+
+    function renderStateCards() {
+      stateGrid.innerHTML = weatherStates.map((item, idx) => `
+        <button class="state-card ${idx===0?'active':''}" data-state="${item.id}">
+          <div class="emoji">${item.emoji}</div>
+          <div class="state-title">${item.name}</div>
+          <div class="state-desc">${item.desc}</div>
+        </button>
+      `).join('');
+
+      stateGrid.addEventListener('click', (e) => {
+        const card = e.target.closest('.state-card');
+        if (!card) return;
+        const state = weatherStates.find(s => s.id === card.dataset.state);
+        [...stateGrid.querySelectorAll('.state-card')].forEach(c => c.classList.remove('active'));
+        card.classList.add('active');
+        quizFeedback.textContent = `📌 ${state.name}重點：${state.tips[0]}；${state.tips[1]}`;
+      });
+    }
+
+    function renderQuiz() {
+      const item = quizBank[currentQuiz];
+      quizQuestion.textContent = item.q;
+      quizOptions.innerHTML = '';
+      quizFeedback.textContent = '';
+
+      item.options.forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        btn.textContent = opt;
+        btn.addEventListener('click', () => {
+          const correct = idx === item.answer;
+          quizFeedback.textContent = correct ? `✅ 答對了！${item.explain}` : `💡 再想想看！${item.explain}`;
+          if (correct) {
+            score += 10;
+            scoreValue.textContent = score;
+          }
+          [...quizOptions.children].forEach(b => b.disabled = true);
+        }, { once: true });
+        quizOptions.appendChild(btn);
+      });
+    }
+
+    function nextQuiz() {
+      currentQuiz = (currentQuiz + 1) % quizBank.length;
+      renderQuiz();
+    }
+
+    function randomWeather() {
+      const keys = Object.keys(presets);
+      const key = keys[Math.floor(Math.random() * keys.length)];
+      setPreset(key);
+    }
+
+    function resetAll() {
+      score = 0;
+      scoreValue.textContent = score;
+      currentQuiz = 0;
+      setPreset('sunny');
+      renderQuiz();
+      quizFeedback.textContent = '重新開始任務，試試看觀察不同天氣吧！';
+    }
+
+    [temp, cloud, rain, wind].forEach(input => input.addEventListener('input', updateScene));
+
+    presetChips.addEventListener('click', (e) => {
+      const chip = e.target.closest('.chip');
+      if (!chip) return;
+      setPreset(chip.dataset.preset);
+    });
+
+    randomWeatherBtn.addEventListener('click', randomWeather);
+    resetBtn.addEventListener('click', resetAll);
+    nextQuizBtn.addEventListener('click', nextQuiz);
+
+    createRainDrops();
+    createStars();
+    renderStateCards();
+    renderQuiz();
+    updateScene();
+  </script>
+</body>
+</html>
